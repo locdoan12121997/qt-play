@@ -1,0 +1,57 @@
+from PyQt5.QtWidgets import QApplication, QMainWindow
+import sys
+from test import Ui_CinemaUI
+import cv2
+from PyQt5.QtCore import pyqtSignal, QThread, Qt, pyqtSlot
+from PyQt5.QtGui import QImage, QPixmap
+from PyQt5.QtWidgets import QLabel
+
+
+class Thread(QThread):
+    changePixmap = pyqtSignal(QImage)
+
+    def run(self):
+        cap = cv2.VideoCapture(0)
+        while True:
+            ret, frame = cap.read()
+            if ret:
+                # https://stackoverflow.com/a/55468544/6622587
+                rgbImage = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                h, w, ch = rgbImage.shape
+                bytesPerLine = ch * w
+                convertToQtFormat = QImage(rgbImage.data, w, h, bytesPerLine, QImage.Format_RGB888)
+                p = convertToQtFormat.scaled(640, 480, Qt.KeepAspectRatio)
+                self.changePixmap.emit(p)
+
+
+class ExampleApp(QMainWindow, Ui_CinemaUI):
+    def __init__(self, parent=None):
+        super(ExampleApp, self).__init__(parent)
+        self.initUI()
+
+    @pyqtSlot(QImage)
+    def setImage(self, image):
+        self.label.setPixmap(QPixmap.fromImage(image))
+
+    def initUI(self):
+        self.setWindowTitle(self.title)
+        self.setGeometry(self.left, self.top, self.width, self.height)
+        self.resize(1800, 1200)
+        # create a label
+        self.label = QLabel(self)
+        self.label.move(280, 120)
+        self.label.resize(640, 480)
+        th = Thread(self)
+        th.changePixmap.connect(self.setImage)
+        th.start()
+
+
+def main():
+    app = QApplication(sys.argv)
+    form = ExampleApp()
+    form.show()
+    app.exec_()
+
+
+if __name__ == '__main__':
+    main()

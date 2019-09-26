@@ -1,0 +1,10 @@
+exercise
+*.png
+*.jpg
+*.pdf
+.ipynb_checkpoints
+.venv
+.idea
+*.graphml
+*.pyc
+*.xml
